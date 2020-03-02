@@ -42,12 +42,17 @@ const Sala = mongoose.model('Sala', MSala);
 var MMensaje = mongoose.Schema({
   usuario: {type: Schema.ObjectId, ref: 'Users' },
   fecha:{ type: Date, default: Date.now },
-  visto:{ type:Boolean, default:false}
+  visto:{ type:Boolean, default:false},
+  mesagge: String
 });
 const Mensaje = mongoose.model('Mensaje', MMensaje);
 
 /************************************************/
 
+app.get('/users/:id', async function (request, response) {
+  var lusers = await Users.findById(request.params.id).populate("sala");
+  response.send(lusers);
+});
 
 app.get('/users', async function (request, response) {
   var lusers = await Users.find().populate("sala");
@@ -79,13 +84,21 @@ app.put('/salas', async function (request, response) {
 });
 
 app.get('/salas', async function (request, response) {
-  var salas = await Sala.findById(request.body._id).populate("mensaje");
+  var salas = await Sala.findById(request.body._id).populate({path:"mensaje",populate:{path:"usuario"}});
   response.send({salas});
 });
 
 /*************************************************/
 
+app.post('/mensajes', async function (request, response) {  
+  var msg = await Mensaje.create({usuario:request.body._id, mesagge:request.body.mesagge});
+  var salas = await Sala.findById(request.body.sala);
+  salas.mensaje.push(msg._id);
+  await Sala.findByIdAndUpdate(request.body.sala , salas);
+  response.send(msg);
+});
 
+/*************************************************/
 
 app.use((req, res, next) => {
   res.header('Access-Control-Allow-Origin', '*');
